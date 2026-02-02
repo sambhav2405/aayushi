@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Er's Cafe</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root { --primary: #ff6b6b; --secondary: #5f27cd; --success: #1dd1a1; --warning: #ff9f43; --dark: #222f3e; --light: #f7f9fc; --white: #ffffff; }
+        body { font-family: 'Outfit', sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); padding-bottom: 80px; }
+
+        .sidebar { height: 100%; width: 0; position: fixed; z-index: 3000; top: 0; left: 0; background-color: var(--white); overflow-x: hidden; transition: 0.3s; padding-top: 60px; box-shadow: 5px 0 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        .sidebar a { padding: 15px 25px; text-decoration: none; font-size: 16px; color: var(--dark); display: flex; align-items: center; gap: 15px; transition: 0.2s; font-weight: 500; }
+        .sidebar a:hover { background: #fff0f0; color: var(--primary); border-right: 4px solid var(--primary); }
+        .sidebar .closebtn { position: absolute; top: 15px; right: 20px; font-size: 30px; cursor: pointer; }
+        .sidebar-section { padding: 20px; margin-top: 10px; border-top: 1px dashed #ddd; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f1f1; font-size: 13px; color: #555; }
+        .blur-bg { filter: blur(5px); pointer-events: none; user-select: none; transition: 0.3s; }
+
+        #loginScreen { max-width: 320px; margin: 10vh auto; text-align: center; background: var(--white); padding: 40px 30px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .login-input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 15px; border: 2px solid #f1f2f6; outline: none; font-size: 15px; background: #f9f9f9; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 15px; font-weight: 700; cursor: pointer; }
+
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 15px 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .menu-btn { font-size: 24px; cursor: pointer; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; background: #f1f2f6; border-radius: 50%; }
+        .icon-btn { width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; margin-left: 5px; }
+        .btn-sound { background: linear-gradient(135deg, #48dbfb, #2980b9); }
+        .btn-sound.muted { background: #bdc3c7; }
+        .btn-notif { background: linear-gradient(135deg, #a55eea, #8854d0); }
+        .btn-clear { background: linear-gradient(135deg, #ff7675, #d63031); }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: var(--white); padding: 20px; border-radius: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .stat-val { font-size: 28px; font-weight: 800; display: block; margin-bottom: 5px; }
+        .stat-label { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; }
+        .graph-card { grid-column: span 2; background: var(--white); padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); height: 250px; display:flex; justify-content:center; align-items:center; }
+
+        .kitchen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-bottom: 20px; }
+        @media (max-width: 768px) { .kitchen-grid { grid-template-columns: 1fr; } }
+        .col-wrapper { background: var(--white); border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; min-height: 400px; }
+        .col-header { padding: 15px; font-weight: 700; text-align: center; color: white; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .col-new { background: linear-gradient(135deg, #ff6b6b, #ee5253); }
+        .col-prep { background: linear-gradient(135deg, #feca57, #ff9f43); }
+        .admin-search { width: 90%; padding: 8px 15px; border: none; border-radius: 20px; outline: none; text-align: center; background: rgba(255,255,255,0.9); }
+        .order-col { padding: 15px; }
+
+        .admin-card { background: var(--white); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; border-left-width: 5px; border-left-style: solid; }
+        .admin-card.new { border-left-color: var(--primary); }
+        .admin-card.prep { border-left-color: var(--warning); }
+        
+        .card-top { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .btn-action { flex: 1; padding: 10px; border-radius: 12px; font-weight: 700; border: none; color: white; cursor: pointer; }
+        .btn-green { background: var(--success); }
+        .btn-red { background: transparent; color: #ff6b6b; border: 1px solid #ff6b6b; }
+        .btn-dark { background: var(--dark); }
+        .action-row { display: flex; gap: 10px; margin-top: 15px; }
+
+        .menu-link-btn { background: var(--dark); color: white; padding: 15px 25px; border-radius: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15); cursor: pointer; text-decoration: none; font-weight: 600; margin-top: 20px; }
+        
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(22px); }
+        #stopAlarmBtn { display: none; background: #ff4757; color: white; border: none; padding: 5px 15px; border-radius: 20px; margin-right: 5px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="mySidebar" class="sidebar">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+        <div style="text-align:center; margin-bottom:20px;"><h3>Admin_v1</h3></div>
+        <a href="#" onclick="closeNav()"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+        <a href="https://canteen-v1.onrender.com/admin-menu.html"><i class="fa-solid fa-utensils"></i> Manage Menu</a>
+        <a href="#" onclick="toggleMute()"><i class="fa-solid fa-volume-high"></i> Toggle Sound</a>
+        <a href="#" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+        
+        <div class="sidebar-section">
+            <div class="sidebar-title">📅 7 Days Revenue</div>
+            <div id="revenue-history-list"><div style="text-align:center;">Loading...</div></div>
+        </div>
+    </div>
+
+    <div id="loginScreen">
+        <h2>Admin Access</h2>
+        <input id="u" class="login-input" placeholder="ID">
+        <input id="p" type="password" class="login-input" placeholder="Password">
+        <button onclick="login()" class="login-btn">Unlock</button>
+    </div>
+
+    <div id="dashboard" style="display:none; max-width:1200px; margin:0 auto;">
+        
+        <div class="dashboard-header">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div class="menu-btn" onclick="openNav()"><i class="fa-solid fa-bars"></i></div>
+                <div><h2 style="margin:0; font-size:18px;">Er's Cafe</h2><small id="status-text" style="color:var(--success); font-weight:bold;">● Online</small></div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <button id="stopAlarmBtn" onclick="stopAlarm()">STOP 🔕</button>
+                <button class="icon-btn btn-sound" id="soundBtn" onclick="toggleMute()"><i class="fa-solid fa-volume-high"></i></button>
+                <button class="icon-btn btn-notif" onclick="enableNotifications()"><i class="fa-solid fa-bell"></i></button>
+                <button class="icon-btn btn-clear" onclick="clearAllData()"><i class="fa-solid fa-trash"></i></button>
+                <div style="margin-left:10px;"><label class="switch"><input type="checkbox" id="shopToggle" onchange="toggleShop(this.checked)"><span class="slider"></span></label></div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-val" style="color:var(--success);" id="total-revenue">₹0</span>
+                <span class="stat-label">Today's Revenue (Safe)</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-val" style="color:var(--secondary);" id="total-orders">0</span>
+                <span class="stat-label">Active Orders</span>
+            </div>
+            <div class="graph-card"><canvas id="itemChart"></canvas></div>
+        </div>
+
+        <div class="kitchen-grid">
+            <div class="col-wrapper">
+                <div class="col-header col-new"><span>🔔 New Orders</span><input type="text" class="admin-search" placeholder="Search..." onkeyup="filterOrders('new', this.value)"></div>
+                <div class="order-col" id="list-new"></div>
+            </div>
+            <div class="col-wrapper">
+                <div class="col-header col-prep"><span>👨‍🍳 Cooking</span><input type="text" class="admin-search" placeholder="Search..." onkeyup="filterOrders('prep', this.value)"></div>
+                <div class="order-col" id="list-prep"></div>
+            </div>
+        </div>
+
+        <a href="https://canteen-v1.onrender.com/admin-menu.html" class="menu-link-btn">
+            <span><i class="fa-solid fa-layer-group"></i> Manage Menu / Items</span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </a>
+
+    </div>
+
+    <script>
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        function openNav() { document.getElementById("mySidebar").style.width = "280px"; document.getElementById("dashboard").classList.add("blur-bg"); }
+        function closeNav() { document.getElementById("mySidebar").style.width = "0"; document.getElementById("dashboard").classList.remove("blur-bg"); }
+
+        let lastOrderId = null; let isMuted = true; let alarmPlaying = false; let allOrdersData = []; let searchFilters = { new: '', prep: '' }; 
+        const alarmSound = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3'); alarmSound.loop = true; 
+
+        function enableNotifications() { Notification.requestPermission(); }
+        function toggleMute() { isMuted = !isMuted; document.getElementById('soundBtn').classList.toggle('muted', isMuted); if(isMuted) stopAlarm(); }
+        function stopAlarm() { alarmSound.pause(); alarmSound.currentTime = 0; alarmPlaying = false; document.getElementById('stopAlarmBtn').style.display = 'none'; }
+        
+        async function loadData() {
+            loadOrders();
+            loadRevenue(); // 🔥 Load Revenue Separately
+        }
+
+        async function loadOrders() {
+            try {
+                const res = await fetch('/api/orders');
+                const orders = await res.json();
+                allOrdersData = orders;
+                
+                // Alarm Logic
+                if (lastOrderId === null && orders.length > 0) lastOrderId = orders[0].orderId;
+                if (orders.length > 0 && orders[0].orderId !== lastOrderId) {
+                    lastOrderId = orders[0].orderId;
+                    if(!isMuted) { alarmSound.play().catch(()=>{}); alarmPlaying=true; document.getElementById('stopAlarmBtn').style.display='inline-block'; }
+                }
+                renderOrders();
+            } catch(e) {}
+        }
+
+        // 🔥 NEW: Fetch Revenue from Persistent DB (Not Active Orders)
+        async function loadRevenue() {
+            try {
+                const res = await fetch('/api/admin/revenue');
+                const data = await res.json();
+                
+                // Get Today's Revenue
+                const today = new Date().toLocaleDateString('en-CA');
+                const todayData = data.find(d => d.date === today);
+                document.getElementById('total-revenue').innerText = "₹" + (todayData ? todayData.amount : 0);
+
+                // Update Sidebar History
+                const list = document.getElementById('revenue-history-list'); list.innerHTML = "";
+                data.slice(0, 7).forEach(d => {
+                    list.innerHTML += `<div class="history-item"><span>${d.date}</span><span>₹${d.amount}</span></div>`;
+                });
+            } catch(e) {}
+        }
+
+        function filterOrders(type, val) { searchFilters[type] = val.toLowerCase(); renderOrders(); }
+
+        function renderOrders() {
+            const listNew = document.getElementById('list-new'); const listPrep = document.getElementById('list-prep');
+            listNew.innerHTML = ""; listPrep.innerHTML = "";
+            let count = 0, freq = {};
+
+            allOrdersData.forEach(o => {
+                if(o.status === 'Completed') return;
+                count++;
+                o.items.forEach(i => freq[i.name] = (freq[i.name] || 0) + i.qty);
+
+                const searchVal = o.status === 'Pending' ? searchFilters.new : searchFilters.prep;
+                if(searchVal && !o.orderId.includes(searchVal) && !o.name.toLowerCase().includes(searchVal)) return;
+
+                const html = `
+                <div class="admin-card ${o.status==='Pending'?'new':'prep'}" onclick="stopAlarm()">
+                    <div class="card-top"><span>#${o.orderId}</span> <span>${o.pickupTime}</span></div>
+                    <div style="font-weight:bold; margin-bottom:5px;">${o.name}</div>
+                    <div style="font-size:13px; color:#555; margin-bottom:10px;">
+                        ${o.items.map(i => `<div>${i.qty} x ${i.name.replace('(📦 PACKED)', '')} ${i.name.includes('PACKED')?'<span class="pack-badge">PACK</span>':''}</div>`).join('')}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-weight:bold; font-size:16px;">₹${o.finalTotal}</span>
+                        <span style="font-size:11px; background:#e8f5e9; color:#27ae60; padding:3px 8px; border-radius:10px;">${o.paymentId || 'Cash'}</span>
+                    </div>
+                    <div class="action-row">
+                        ${o.status === 'Pending' ? 
+                        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Accepted')">Accept</button>
+                         <button class="btn-action btn-red" onclick="event.stopPropagation(); deleteOrder('${o.orderId}')">Reject</button>` : 
+                        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Ready')">Ready</button>
+                         <button class="btn-action btn-dark" onclick="markCompleted('${o.orderId}')">Done</button>`}
+                    </div>
+                </div>`;
+                
+                if(o.status === 'Pending') listNew.innerHTML += html; else listPrep.innerHTML += html;
+            });
+            document.getElementById('total-orders').innerText = count;
+            updateChart(freq);
+        }
+
+        async function updateStatus(id, status) { await fetch('/api/update-status', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderId:id, status})}); loadOrders(); }
+        async function markCompleted(id) { Swal.fire({title:'Done?', showCancelButton:true, confirmButtonText:'Yes'}).then(async(r)=>{ if(r.isConfirmed){ await fetch('/api/update-status', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderId:id, status:'Completed'})}); loadOrders(); }}); }
+        
+        async function deleteOrder(id) { 
+            Swal.fire({title:'Delete?', text:"This removes order from list but KEEPS revenue.", icon:'warning', showCancelButton:true, confirmButtonColor:'#d33', confirmButtonText:'Delete'}).then(async(r)=>{ 
+                if(r.isConfirmed) { await fetch('/api/delete-order', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderId:id})}); loadOrders(); } 
+            }); 
+        }
+        
+        async function clearAllData() { Swal.fire({title:'Clear List?', text:"Revenue will stay safe.", icon:'warning', showCancelButton:true, confirmButtonColor:'#d33'}).then(async(r)=>{ if(r.isConfirmed) { await fetch('/api/clear-all', {method:'POST'}); loadOrders(); }}); }
+
+        window.onload = function() { if(localStorage.getItem('isLoggedIn')==='true') showDashboard(); document.getElementById('soundBtn').classList.add('muted'); };
+        async function login() { 
+            const u=document.getElementById('u').value, p=document.getElementById('p').value;
+            const res = await fetch('/api/admin/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user:u, pass:p})});
+            const d = await res.json();
+            if(d.success) { localStorage.setItem('isLoggedIn','true'); showDashboard(); } else Swal.fire('Error','Wrong Pass','error');
+        }
+        function showDashboard() { document.getElementById('loginScreen').style.display='none'; document.getElementById('dashboard').style.display='block'; initDashboard(); }
+        function logout() { localStorage.removeItem('isLoggedIn'); location.reload(); }
+        async function initDashboard() { 
+            const d = await (await fetch('/api/status')).json(); 
+            document.getElementById('shopToggle').checked=d.isOpen; updateStatusText(d.isOpen); 
+            loadData(); setInterval(loadData, 3000); 
+        }
+        async function toggleShop(isOpen) { await fetch('/api/toggle-shop', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({isOpen})}); updateStatusText(isOpen); }
+        function updateStatusText(isOpen) { const t=document.getElementById('status-text'); t.innerText=isOpen?"● Online":"● Offline"; t.style.color=isOpen?"var(--success)":"var(--primary)"; }
+        
+        let salesChart = null;
+        function updateChart(itemsCount) {
+            const ctx = document.getElementById('itemChart').getContext('2d');
+            if(salesChart) { salesChart.data.labels=Object.keys(itemsCount); salesChart.data.datasets[0].data=Object.values(itemsCount); salesChart.update(); }
+            else { salesChart = new Chart(ctx, { type:'doughnut', data: { labels:Object.keys(itemsCount), datasets:[{data:Object.values(itemsCount), backgroundColor:['#ff6b6b','#54a0ff','#1dd1a1','#feca57','#5f27cd'], borderWidth:0}] }, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right'}}} }); }
+        }
+    </script>
+</body>
+</html>

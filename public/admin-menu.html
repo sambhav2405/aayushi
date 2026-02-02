@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Menu - Er's Cafe</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root { --primary: #ff6b6b; --dark: #222f3e; --light: #f4f6f8; --white: #ffffff; --green: #2ecc71; --blue: #54a0ff; }
+        body { font-family: 'Outfit', sans-serif; background: var(--light); margin: 0; padding: 15px; color: var(--dark); padding-bottom: 80px; }
+
+        /* HEADER */
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; background: var(--white); padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .back-btn { background: #f1f2f6; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--dark); transition: 0.2s; }
+        .back-btn:active { transform: scale(0.95); }
+        h2 { margin: 0; font-size: 20px; }
+
+        /* FORM BOX */
+        .box { background: var(--white); padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #fff; position: relative; }
+        .row { display: flex; gap: 10px; margin-bottom: 12px; }
+        
+        .inp { width: 100%; padding: 14px; border: 2px solid #f1f2f6; border-radius: 12px; background: #f9f9f9; outline: none; box-sizing: border-box; font-size: 14px; font-weight: 500; transition: 0.3s; }
+        .inp:focus { border-color: var(--primary); background: white; }
+        
+        .btn-add { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3); transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; }
+        .btn-add.editing { background: var(--blue); box-shadow: 0 5px 15px rgba(84, 160, 255, 0.3); }
+        .btn-add:active { transform: scale(0.98); }
+
+        /* Cancel Edit Btn */
+        #cancelEditBtn { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #888; cursor: pointer; display: none; }
+
+        /* IMAGE PREVIEW */
+        .img-input-container { display: flex; align-items: center; gap: 10px; width: 100%; }
+        .preview-box { width: 50px; height: 50px; border-radius: 10px; background: #eee; border: 2px solid #ddd; object-fit: cover; flex-shrink: 0; }
+
+        /* SEARCH BAR */
+        .search-container { position: relative; margin-bottom: 15px; }
+        .search-inp { width: 100%; padding: 12px 15px 12px 40px; border-radius: 30px; border: 1px solid #ddd; outline: none; font-size: 14px; }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+
+        /* MENU GRID SYSTEM */
+        #menu-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+
+        /* ITEM CARD */
+        .item-card { background: white; padding: 12px; border-radius: 16px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; transition: 0.2s; position: relative; overflow: hidden; }
+        .item-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
+        
+        .item-img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #eee; flex-shrink: 0; }
+        
+        .item-content { flex: 1; }
+        .item-name { font-weight: 700; font-size: 16px; color: var(--dark); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .item-meta { font-size: 12px; color: #888; font-weight: 500; margin-bottom: 8px; }
+        .price-tag { font-weight: 800; color: var(--primary); font-size: 15px; background: #fff0f0; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+
+        /* CONTROLS */
+        .item-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        
+        .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #dfe6e9; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--green); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .actions { display: flex; gap: 8px; }
+        .btn-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; border: none; transition: 0.2s; }
+        .btn-edit { background: #e3f2fd; color: var(--blue); }
+        .btn-del { background: #ffebee; color: var(--primary); }
+        .btn-icon:active { transform: scale(0.9); }
+
+        .loading { text-align: center; color: #888; margin-top: 30px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='admin.html'"><i class="fa-solid fa-arrow-left"></i></button>
+        <h2>Edit / Add Items_1</h2>
+    </div>
+
+    <div class="box">
+        <h3 id="formTitle" style="margin-bottom: 15px; color: var(--primary);">+ Add New Item</h3>
+        <i class="fa-solid fa-xmark" id="cancelEditBtn" onclick="cancelEdit()"></i> <div class="row">
+            <input id="nItem" class="inp" placeholder="Item Name (e.g. Cheese Burger)">
+            <input id="nPrice" class="inp" type="number" placeholder="₹ Price" style="width: 30%;">
+        </div>
+        
+        <div class="row">
+            <select id="nCat" class="inp" style="width: 40%;">
+                <option value="Burger">Burger</option>
+                <option value="Pizza">Pizza</option>
+                <option value="Maggi">Maggi</option>
+                <option value="Sandwich">Sandwich</option>
+                <option value="Momos">Momos</option>
+                <option value="Pasta">Pasta</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Drinks">Drinks</option>
+                <option value="Rolls">Rolls</option>
+                <option value="Patties">Patties</option>
+            </select>
+            <div class="img-input-container">
+                <input id="nImg" class="inp" placeholder="Paste Image Link..." oninput="updatePreview(this.value)">
+                <img id="livePreview" src="https://cdn-icons-png.flaticon.com/512/754/754857.png" class="preview-box">
+            </div>
+        </div>
+
+        <button id="saveBtn" class="btn-add" onclick="handleSave()">
+            <i class="fa-solid fa-plus"></i> Add Item
+        </button>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;">
+        <h3 style="margin:0;">Current Menu</h3>
+        <small style="color: #888;">Live Database</small>
+    </div>
+
+    <div class="search-container">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="searchBox" class="search-inp" placeholder="Search pizza, burger..." onkeyup="filterMenu()">
+    </div>
+    
+    <div id="menu-list">
+        <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading Menu...</div>
+    </div>
+
+    <script>
+        const API_ADD = '/api/admin/add-item';
+        const API_GET = '/api/menu';
+        const API_DEL = '/api/admin/delete-item';
+        const API_STOCK = '/api/admin/update-stock';
+
+        let editMode = false; // 🔥 Track Edit Mode
+        let editId = null;    // 🔥 Store Item ID being edited
+
+        window.onload = loadMenu;
+
+        function updatePreview(url) {
+            const img = document.getElementById('livePreview');
+            img.src = url || "https://cdn-icons-png.flaticon.com/512/754/754857.png";
+            img.onerror = () => { img.src = "https://cdn-icons-png.flaticon.com/512/754/754857.png"; }
+        }
+
+        async function loadMenu() {
+            try {
+                const res = await fetch(API_GET);
+                const items = await res.json();
+                const list = document.getElementById('menu-list');
+                
+                if(items.length === 0) { list.innerHTML = "<div class='loading'>No items found. Add some!</div>"; return; }
+                
+                list.innerHTML = "";
+                items.forEach(i => {
+                    const name = i.name || "Unknown";
+                    list.innerHTML += `
+                    <div class="item-card">
+                        <img src="${i.image}" class="item-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/754/754857.png'">
+                        <div class="item-content">
+                            <div class="item-name">${name}</div>
+                            <div class="item-meta">${i.category}</div>
+                            <div class="price-tag">₹${i.price}</div>
+                        </div>
+                        <div class="item-controls">
+                            <label class="switch">
+                                <input type="checkbox" ${i.isAvailable?'checked':''} onchange="toggleStock('${i._id}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                            <div class="actions">
+                                <button class="btn-icon btn-edit" onclick="startEdit('${i._id}', '${name}', '${i.price}', '${i.category}', '${i.image}')">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="btn-icon btn-del" onclick="deleteItem('${i._id}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            } catch(e) { document.getElementById('menu-list').innerHTML = "<div class='loading'>Error loading data. Check Server.</div>"; }
+        }
+
+        function filterMenu() {
+            let input = document.getElementById('searchBox').value.toLowerCase();
+            let cards = document.getElementsByClassName('item-card');
+            for (let i = 0; i < cards.length; i++) {
+                let name = cards[i].getElementsByClassName('item-name')[0].innerText.toLowerCase();
+                let cat = cards[i].getElementsByClassName('item-meta')[0].innerText.toLowerCase();
+                if (name.includes(input) || cat.includes(input)) cards[i].style.display = "flex";
+                else cards[i].style.display = "none";
+            }
+        }
+
+        // 🔥 START EDIT MODE
+        function startEdit(id, name, price, cat, img) {
+            editMode = true;
+            editId = id;
+            
+            // Populate Form
+            document.getElementById('nItem').value = name;
+            document.getElementById('nPrice').value = price;
+            document.getElementById('nCat').value = cat;
+            document.getElementById('nImg').value = img;
+            updatePreview(img);
+
+            // Change UI to Edit Mode
+            document.getElementById('formTitle').innerText = "Edit Item";
+            document.getElementById('formTitle').style.color = "var(--blue)";
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Update Item';
+            btn.classList.add('editing');
+            document.getElementById('cancelEditBtn').style.display = 'block';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 🔥 CANCEL EDIT
+        function cancelEdit() {
+            editMode = false;
+            editId = null;
+            document.getElementById('nItem').value = "";
+            document.getElementById('nPrice').value = "";
+            document.getElementById('nImg').value = "";
+            updatePreview("");
+
+            document.getElementById('formTitle').innerText = "+ Add New Item";
+            document.getElementById('formTitle').style.color = "var(--primary)";
+            const btn = document.getElementById('saveBtn');
+            btn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
+            btn.classList.remove('editing');
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        }
+
+        // 🔥 HANDLE SAVE (ADD or UPDATE)
+        async function handleSave() {
+            const name = document.getElementById('nItem').value;
+            const price = document.getElementById('nPrice').value;
+            const cat = document.getElementById('nCat').value;
+            const img = document.getElementById('nImg').value || "https://cdn-icons-png.flaticon.com/512/754/754857.png";
+
+            if(!name || !price) return Swal.fire("Required", "Name and Price are needed!", "warning");
+
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                // If Editing -> First Delete Old Item
+                if (editMode && editId) {
+                    await fetch(API_DEL, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ id: editId })
+                    });
+                }
+
+                // Add New Item (Logic same for both Add & Edit)
+                const res = await fetch(API_ADD, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, price, category: cat, image: img })
+                });
+                
+                const data = await res.json();
+
+                if(data.success) {
+                    Swal.fire({ icon: 'success', title: editMode ? 'Item Updated!' : 'Item Added!', timer: 1500, showConfirmButton: false });
+                    cancelEdit(); // Reset Form
+                    loadMenu();   // Reload List
+                } else {
+                    Swal.fire("Error", "Failed to save item.", "error");
+                }
+            } catch(e) {
+                Swal.fire("Error", "Server Error.", "error");
+            }
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+
+        async function deleteItem(id) {
+            Swal.fire({
+                title: 'Delete?', text: "Permanent Action", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ff6b6b', confirmButtonText: 'Yes'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await fetch(API_DEL, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ id })
+                    });
+                    loadMenu();
+                }
+            });
+        }
+
+        async function toggleStock(id, status) {
+            await fetch(API_STOCK, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id, isAvailable: status })
+            });
+        }
+    </script>
+</body>
+</html>
+
