@@ -9,15 +9,15 @@ app.use(cors());
 app.use(express.static('public'));
 
 // --- 1. SECURE CONFIGURATION ---
-const MONGO_URI = process.env.MONGO_URI;
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+// Fallback values agar .env file nahi milti (Local testing ke liye)
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://jainsambhav877_db_user:rtY9YGPgMQyyqYEn@canteen.95x83al.mongodb.net/?retryWrites=true&w=majority&appName=canteen";
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8500126121:AAEUL_YjXTq20kN7m8k9VYL7EjAQ-Xn3bDE";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "-5154056582";
 const ADMIN_PASS = process.env.ADMIN_PASS || "12345"; 
 
-// Check if keys exist
-if (!MONGO_URI || !TELEGRAM_BOT_TOKEN) {
-    console.error("❌ CRITICAL ERROR: .env file missing or variables not set!");
-    process.exit(1);
+// Check if critical keys exist (Optional: warning only)
+if (!MONGO_URI) {
+    console.warn("⚠️ WARNING: MONGO_URI is missing in .env");
 }
 
 mongoose.connect(MONGO_URI).then(() => {
@@ -57,7 +57,6 @@ const Setting = mongoose.model('Setting', settingSchema);
 // --- UTILS ---
 async function initAdmin() {
     const exists = await Admin.findOne();
-    // Secure Password from ENV
     if (!exists) await new Admin({ username: "admin", pass: ADMIN_PASS }).save();
 }
 
@@ -70,16 +69,16 @@ async function updateDailyRevenue(amount) {
     await Revenue.updateOne({ date: today }, { $inc: { amount: amount } }, { upsert: true });
 }
 
-// Telegram Logic
+// Telegram Logic (Fixed)
 async function sendTelegramAlert(order) {
     const itemsList = order.items.map(i => `- ${i.qty} x ${i.name}`).join('\n');
     
-    // 🔥 Location Link Logic
+    // 🔥 Location Link Logic (Fixed HTML Tag)
     const locLine = order.location ? `\n📍 <a href="${order.location}"><b>View on Map</b></a>` : '\n📍 No Location';
 
     const receiptMsg = `🧾 <b>ORDER #${order.orderId}</b>\n👤 ${order.name} (${order.phone})${locLine}\n💰 ₹${order.finalTotal}\n🛒 <b>ITEMS:</b>\n${itemsList}`;
     
-    // Voice Msg Logic (Same as before)
+    // Voice Msg Logic
     const itemsSpeech = order.items.map(i => {
         let cleanName = i.name.replace('(📦 PACKED)', '').trim();
         return `${i.qty} ${cleanName}`;
@@ -90,8 +89,11 @@ async function sendTelegramAlert(order) {
         // Parse mode HTML zaroori hai link ke liye
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: receiptMsg, parse_mode: 'HTML', disable_notification: true }) });
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: voiceMsg, parse_mode: 'HTML' }) });
-    } catch (e) {}
+    } catch (e) {
+        console.error("Telegram Error:", e.message);
+    }
 }
+
 // --- API ROUTES ---
 
 // 1. MENU APIs (Public)
@@ -103,10 +105,16 @@ app.post('/api/order', async (req, res) => {
         const uniqueCode = Math.floor(100000 + Math.random() * 900000).toString();
         const newOrder = new Order({ orderId: uniqueCode, ...req.body });
         await newOrder.save();
+        
+        // Non-blocking calls (wait karne ki zarurat nahi)
         sendTelegramAlert(newOrder); 
         updateDailyRevenue(newOrder.finalTotal);
+        
         res.json({ success: true, orderId: uniqueCode });
-    } catch (e) { res.json({ success: false }); }
+    } catch (e) { 
+        console.error("Order Error:", e);
+        res.json({ success: false }); 
+    }
 });
 
 app.get('/api/orders', async (req, res) => {
@@ -116,13 +124,15 @@ app.get('/api/orders', async (req, res) => {
 
 // --- 🔥 ADMIN SECURE ROUTES ---
 app.post('/api/admin/login', async (req, res) => {
-    const admin = await Admin.findOne({ username: req.body.user });
-    // Compare with DB pass OR Env pass
-    if (admin && (admin.pass === req.body.pass || req.body.pass === ADMIN_PASS)) {
-        res.json({ success: true });
-    } else {
-        res.json({ success: false });
-    }
+    try {
+        const admin = await Admin.findOne({ username: req.body.user });
+        // Compare with DB pass OR Env pass OR Hardcoded Fallback
+        if ((admin && admin.pass === req.body.pass) || req.body.pass === ADMIN_PASS || req.body.pass === "12345") {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (e) { res.json({ success: false }); }
 });
 
 app.post('/api/admin/add-item', async (req, res) => { 
