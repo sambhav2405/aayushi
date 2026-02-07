@@ -30,6 +30,7 @@ mongoose.connect(MONGO_URI).then(() => {
 const orderSchema = new mongoose.Schema({
     orderId: String, name: String, phone: String, items: Array,
     total: Number, finalTotal: Number, pickupTime: String, paymentId: String,
+    location: { type: String, default: '' }, // 🔥 New Field Added
     status: { type: String, default: 'Pending' }, timestamp: { type: Date, default: Date.now }
 });
 const Order = mongoose.model('Order', orderSchema);
@@ -72,8 +73,13 @@ async function updateDailyRevenue(amount) {
 // Telegram Logic
 async function sendTelegramAlert(order) {
     const itemsList = order.items.map(i => `- ${i.qty} x ${i.name}`).join('\n');
-    const receiptMsg = `🧾 <b>ORDER #${order.orderId}</b>\n👤 ${order.name} (${order.phone})\n💰 ₹${order.finalTotal}\n🛒 <b>ITEMS:</b>\n${itemsList}`;
     
+    // 🔥 Location Link Logic
+    const locLine = order.location ? `\n📍 <a href="${order.location}"><b>View on Map</b></a>` : '\n📍 No Location';
+
+    const receiptMsg = `🧾 <b>ORDER #${order.orderId}</b>\n👤 ${order.name} (${order.phone})${locLine}\n💰 ₹${order.finalTotal}\n🛒 <b>ITEMS:</b>\n${itemsList}`;
+    
+    // Voice Msg Logic (Same as before)
     const itemsSpeech = order.items.map(i => {
         let cleanName = i.name.replace('(📦 PACKED)', '').trim();
         return `${i.qty} ${cleanName}`;
@@ -81,12 +87,11 @@ async function sendTelegramAlert(order) {
     const voiceMsg = `🔔 <b>NEW ORDER</b>\n${order.name}\n${itemsSpeech}`;
 
     try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-        await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: receiptMsg, parse_mode: 'HTML', disable_notification: true }) });
-        await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: voiceMsg, parse_mode: 'HTML' }) });
-    } catch (e) { console.error("Telegram Error:", e.message); }
+        // Parse mode HTML zaroori hai link ke liye
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: receiptMsg, parse_mode: 'HTML', disable_notification: true }) });
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: voiceMsg, parse_mode: 'HTML' }) });
+    } catch (e) {}
 }
-
 // --- API ROUTES ---
 
 // 1. MENU APIs (Public)
