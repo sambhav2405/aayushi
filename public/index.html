@@ -35,7 +35,7 @@
             overflow-x: hidden;
         }
 
-        /* --- HEADER (Fixed Alignment) --- */
+        /* HEADER */
         header { 
             background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(10px); 
@@ -116,7 +116,7 @@
             transition: 0.2s;
         }
 
-        /* HERO SECTION */
+        /* HERO */
         .hero { 
             background: linear-gradient(135deg, #0fb9b1, #2bcbba); 
             padding: 25px 20px; 
@@ -129,7 +129,40 @@
         .hero h1 { font-size: 26px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .hero p { font-size: 14px; opacity: 0.95; font-weight: 400; }
 
-        /* CONTROLS & SEARCH */
+        /* 🔥 NEW PREMIUM PWA BANNER */
+        .app-banner { 
+            margin: 10px 5% 20px 5%; 
+            background: #ffffff; 
+            padding: 12px 15px; 
+            border-radius: 16px; 
+            display: none; /* JS toggles this */
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
+            border: 1px solid #e0fbfb; 
+            animation: slideDown 0.5s ease;
+        }
+        @keyframes slideDown { from{transform: translateY(-20px); opacity: 0;} to{transform: translateY(0); opacity: 1;} }
+        
+        .app-content { display: flex; align-items: center; gap: 12px; }
+        .app-icon { width: 38px; height: 38px; border-radius: 10px; object-fit: contain; }
+        
+        .app-btn { 
+            background: var(--primary); 
+            color: white; 
+            text-decoration: none; 
+            padding: 8px 20px; 
+            border-radius: 30px; 
+            font-weight: 700; 
+            font-size: 12px; 
+            box-shadow: 0 4px 10px rgba(15, 185, 177, 0.3); 
+            transition: 0.2s; 
+            border: none; 
+            cursor: pointer; 
+        }
+        .app-btn:active { transform: scale(0.95); }
+
+        /* CONTROLS */
         .controls { padding: 0 5%; margin-bottom: 20px; }
         .search-box { width: 100%; padding: 14px 20px; border: none; border-radius: 15px; font-size: 15px; margin-bottom: 15px; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.05); font-weight: 600; outline: none; transition: 0.3s; color: var(--dark); }
         .search-box:focus { box-shadow: 0 5px 20px rgba(15, 185, 177, 0.15); }
@@ -255,11 +288,11 @@
     </section>
 
     <div class="app-banner" id="installBanner">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <img src="logo.png" style="height:40px; border-radius:10px; background:white;">
+        <div class="app-content">
+            <img src="logo.png" class="app-icon" onerror="this.src='https://cdn-icons-png.flaticon.com/512/754/754857.png'">
             <div>
-                <div style="font-weight: 800; font-size: 14px;">Install App 📲</div>
-                <div style="font-size: 11px; opacity: 0.8;">Better Experience</div>
+                <div style="font-weight: 800; font-size: 14px; color:var(--dark);">Install App 📲</div>
+                <div style="font-size: 11px; color: #888; font-weight: 500;">Get better experience</div>
             </div>
         </div>
         <button class="app-btn" id="installBtn">INSTALL</button>
