@@ -209,17 +209,23 @@
                 const searchVal = o.status === 'Pending' ? searchFilters.new : searchFilters.prep;
                 if(searchVal && !o.orderId.includes(searchVal) && !o.name.toLowerCase().includes(searchVal)) return;
 
-            const html = `
+        // Is logic ko update karein:
+let locationHtml = '';
+if (o.location && o.location.includes('http')) {
+    // Agar Google Map Link hai
+    locationHtml = `<a href="${o.location}" target="_blank" style="font-size:12px; background:#e3f2fd; color:#0984e3; padding:4px 8px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; border:1px solid #0984e3;"><i class="fa-solid fa-map-location-dot"></i> Map</a>`;
+} else if (o.location) {
+    // Agar Manual Text hai (Eg: Room 302)
+    locationHtml = `<span style="font-size:12px; background:#fff3e0; color:#e67e22; padding:4px 8px; border-radius:8px; border:1px solid #e67e22;"><i class="fa-solid fa-location-dot"></i> ${o.location}</span>`;
+}
+
+const html = `
 <div class="admin-card ${o.status==='Pending'?'new':'prep'}" onclick="stopAlarm()">
-    <div class="card-top">
-        <span>#${o.orderId}</span> 
-        <span>${o.pickupTime}</span>
-    </div>
+    <div class="card-top"><span>#${o.orderId}</span> <span>${o.pickupTime}</span></div>
     
-    <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-        <span>${o.name}</span>
-        ${o.location ? `<a href="${o.location}" target="_blank" style="font-size:12px; background:#e3f2fd; color:#0984e3; padding:4px 8px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; border:1px solid #0984e3;"><i class="fa-solid fa-map-location-dot"></i> Map</a>` : ''}
-    </div>
+    <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <span style="max-width:60%">${o.name}</span>
+        ${locationHtml} </div>
 
     <div style="font-size:13px; color:#555; margin-bottom:10px;">
         ${o.items.map(i => `<div>${i.qty} x ${i.name.replace('(📦 PACKED)', '')} ${i.name.includes('PACKED')?'<span class="pack-badge">PACK</span>':''}</div>`).join('')}
@@ -229,7 +235,6 @@
         <span style="font-weight:bold; font-size:16px;">₹${o.finalTotal}</span>
         <span style="font-size:11px; background:#e8f5e9; color:#27ae60; padding:3px 8px; border-radius:10px;">${o.paymentId || 'Cash'}</span>
     </div>
-    
     <div class="action-row">
         ${o.status === 'Pending' ? 
         `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Accepted')">Accept</button>
