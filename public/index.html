@@ -233,6 +233,11 @@
             </div>
             <input type="text" id="student-name" placeholder="Enter Your Name">
             <input type="tel" id="student-phone" placeholder="Mobile Number">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+    <input type="text" id="location-link" style="display:none;"> <button onclick="getLocation()" id="loc-btn" style="width:100%; padding:12px; background:#e3f2fd; color:#0984e3; border:1px dashed #0984e3; border-radius:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <i class="fa-solid fa-location-crosshairs"></i> Share My Current Location
+    </button>
+</div>
             <div style="display:flex; gap:12px; margin-top:10px;">
                 <button onclick="document.getElementById('paymentModal').style.display='none'" style="flex:1; padding:14px; background:#f1f2f6; border:none; border-radius:12px; font-weight:bold; cursor:pointer; color:#636e72;">Cancel</button>
                 <button onclick="verifyAndOrder()" style="flex:1; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">Confirm</button>
@@ -451,10 +456,62 @@
             closeAllSidebars(); 
             document.getElementById('paymentModal').style.display='flex';
         }
+// --- 📍 GPS LOCATION LOGIC ---
+function getLocation() {
+    const btn = document.getElementById('loc-btn');
+    const input = document.getElementById('location-link');
+    
+    if (navigator.geolocation) {
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+    } else {
+        Swal.fire("Error", "Geolocation is not supported by this browser.", "error");
+    }
+}
 
+function showPosition(position) {
+    const lat = position.coords.latitude;
+    const long = position.coords.longitude;
+    // Google Maps Link Create
+    const link = `https://www.google.com/maps?q=${lat},${long}`;
+    
+    document.getElementById('location-link').value = link;
+    
+    // UI Update
+    const btn = document.getElementById('loc-btn');
+    btn.style.background = "#e8f5e9";
+    btn.style.color = "#27ae60";
+    btn.style.borderColor = "#27ae60";
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Location Attached!';
+}
+
+function showError(error) {
+    const btn = document.getElementById('loc-btn');
+    btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Permission Denied';
+    Swal.fire("Location Error", "Please allow location access.", "warning");
+}
         async function verifyAndOrder() {
             const name = document.getElementById('student-name').value;
             const phone = document.getElementById('student-phone').value;
+            // verifyAndOrder ke andar ye line dhundo:
+// const phone = document.getElementById('student-phone').value;
+
+// Uske niche ye add karo:
+const locationUrl = document.getElementById('location-link').value || ""; 
+
+// Fir fetch request wali body ko update karo:
+body: JSON.stringify({ 
+    name, 
+    phone: phone || "999", 
+    items: finalItems, 
+    total, 
+    finalTotal: total, 
+    mode: "Mixed", 
+    pickupTime: window.finalOrderTime, 
+    paymentId: 'Pay at Counter', 
+    deviceId,
+    location: locationUrl // 🔥 Ye naya add kiya hai
+})
             if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai! 😅', 'question');
 
             const finalItems = Object.keys(cart).map(id => {
