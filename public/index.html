@@ -491,79 +491,86 @@ function showError(error) {
     Swal.fire("Location Error", "Please allow location access.", "warning");
 }
         async function verifyAndOrder() {
-            const name = document.getElementById('student-name').value;
-            const phone = document.getElementById('student-phone').value;
-            // verifyAndOrder ke andar ye line dhundo:
-// const phone = document.getElementById('student-phone').value;
+    // 1. सबसे पहले इनपुट्स की वैल्यू उठाएं
+    const name = document.getElementById('student-name').value;
+    const phone = document.getElementById('student-phone').value;
 
-// Uske niche ye add karo:
-const locationUrl = document.getElementById('location-link').value || ""; 
+    // 2. चेक करें नाम भरा है या नहीं
+    if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai! 😅', 'question');
 
-// Fir fetch request wali body ko update karo:
-body: JSON.stringify({ 
-    name, 
-    phone: phone || "999", 
-    items: finalItems, 
-    total, 
-    finalTotal: total, 
-    mode: "Mixed", 
-    pickupTime: window.finalOrderTime, 
-    paymentId: 'Pay at Counter', 
-    deviceId,
-    location: locationUrl // 🔥 Ye naya add kiya hai
-})
-            if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai! 😅', 'question');
+    // 3. 🔥 FIX: finalItems को fetch से पहले बनाना ज़रूरी है
+    const finalItems = Object.keys(cart).map(id => {
+        const item = menuItems.find(i => i._id == id);
+        return { 
+            name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, 
+            qty: cart[id].qty, 
+            price: item.price 
+        };
+    });
 
-            const finalItems = Object.keys(cart).map(id => {
-                const item = menuItems.find(i => i._id == id);
-                return { name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, qty: cart[id].qty, price: item.price };
+    // 4. बाकी डेटा तैयार करें
+    const total = document.getElementById('final-total').innerText;
+    const deviceId = localStorage.getItem('canteen_device_id') || 'unknown'; 
+    const locationUrl = document.getElementById('location-link').value || ""; // Location भी उठा ली
+
+    // 5. सर्वर को रिक्वेस्ट भेजें (अब finalItems बन चुका है, तो Error नहीं आएगा)
+    try {
+        const res = await fetch('/api/order', {
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ 
+                name, 
+                phone: phone || "999", 
+                items: finalItems, // ✅ यहाँ अब यह defined है
+                total, 
+                finalTotal: total, 
+                mode: "Mixed", 
+                pickupTime: window.finalOrderTime, 
+                paymentId: 'Pay at Counter', 
+                deviceId,
+                location: locationUrl 
+            })
+        });
+        
+        const data = await res.json();
+        
+        if(data.success) {
+            // Local Storage में सेव करें
+            localStorage.setItem('savedName', name); 
+            localStorage.setItem('savedPhone', phone);
+            
+            const myOrder = {
+                orderId: data.orderId,
+                items: finalItems,
+                total: total,
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                status: 'Pending'
+            };
+            saveLocalHistory(myOrder);
+
+            document.getElementById('paymentModal').style.display = 'none';
+            
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'Order Placed! 🎉', 
+                text: `Order ID: #${data.orderId}\nCounter par payment karein.`, 
+                timer: 4000 
             });
-            const total = document.getElementById('final-total').innerText;
-            const deviceId = localStorage.getItem('canteen_device_id') || 'unknown'; 
-
-            try {
-                const res = await fetch('/api/order', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name, phone: phone || "999", items: finalItems, total, finalTotal: total, mode: "Mixed", pickupTime: window.finalOrderTime, paymentId: 'Pay at Counter', deviceId })
-                });
-                const data = await res.json();
-                
-                if(data.success) {
-                    // 🔥 SAVE DATA LOCALLY
-                    localStorage.setItem('savedName', name); 
-                    localStorage.setItem('savedPhone', phone);
-                    
-                    const myOrder = {
-                        orderId: data.orderId,
-                        items: finalItems,
-                        total: total,
-                        date: new Date().toLocaleDateString(),
-                        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                        status: 'Pending'
-                    };
-                    saveLocalHistory(myOrder); // Save to LocalStorage
-
-                    document.getElementById('paymentModal').style.display = 'none';
-                    
-                    Swal.fire({ 
-                        icon: 'success', 
-                        title: 'Order Placed! 🎉', 
-                        text: `Order ID: #${data.orderId}\nCounter par payment karein.`, 
-                        timer: 4000 
-                    });
-                    
-                    cart = {}; updateCartUI(); 
-                    setTimeout(() => openSidebar('history'), 1000);
-                } else {
-                    document.getElementById('paymentModal').style.display = 'none';
-                    if(data.message === "Shop Closed") showClosedMessage();
-                    else Swal.fire('Oops!', data.message, 'error');
-                }
-            } catch(e) { 
-                document.getElementById('paymentModal').style.display = 'none';
-                Swal.fire('Network Error', 'Internet check karo! 📶', 'error'); 
-            }
+            
+            cart = {}; updateCartUI(); 
+            setTimeout(() => openSidebar('history'), 1000);
+        } else {
+            document.getElementById('paymentModal').style.display = 'none';
+            if(data.message === "Shop Closed") showClosedMessage();
+            else Swal.fire('Oops!', data.message, 'error');
         }
+    } catch(e) { 
+        console.error(e);
+        document.getElementById('paymentModal').style.display = 'none';
+        Swal.fire('Network Error', 'Internet check karo! 📶', 'error'); 
+    }
+}
 
         // --- 🔥 LOCAL STORAGE HISTORY LOGIC ---
         function saveLocalHistory(order) {
