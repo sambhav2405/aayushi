@@ -56,6 +56,11 @@
         .item-name { font-weight: 700; font-size: 16px; color: var(--dark); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
         .item-meta { font-size: 12px; color: #888; font-weight: 500; margin-bottom: 8px; }
         .price-tag { font-weight: 800; color: var(--primary); font-size: 15px; background: #fff0f0; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+        
+        /* 🔥 STOCK BADGE */
+        .stock-tag { font-size: 11px; color: #fff; background: #2ecc71; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .stock-low { background: #e67e22; }
+        .stock-out { background: #e74c3c; }
 
         /* CONTROLS */
         .item-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
@@ -85,9 +90,12 @@
 
     <div class="box">
         <h3 id="formTitle" style="margin-bottom: 15px; color: var(--primary);">+ Add New Item</h3>
-        <i class="fa-solid fa-xmark" id="cancelEditBtn" onclick="cancelEdit()"></i> <div class="row">
+        <i class="fa-solid fa-xmark" id="cancelEditBtn" onclick="cancelEdit()"></i> 
+        
+        <div class="row">
             <input id="nItem" class="inp" placeholder="Item Name (e.g. Cheese Burger)">
             <input id="nPrice" class="inp" type="number" placeholder="₹ Price" style="width: 30%;">
+            <input id="nStock" class="inp" type="number" placeholder="Qty" style="width: 20%; background:#e8f5e9;">
         </div>
         
         <div class="row">
@@ -134,8 +142,8 @@
         const API_DEL = '/api/admin/delete-item';
         const API_STOCK = '/api/admin/update-stock';
 
-        let editMode = false; // 🔥 Track Edit Mode
-        let editId = null;    // 🔥 Store Item ID being edited
+        let editMode = false; 
+        let editId = null;    
 
         window.onload = loadMenu;
 
@@ -156,12 +164,19 @@
                 list.innerHTML = "";
                 items.forEach(i => {
                     const name = i.name || "Unknown";
+                    const stock = i.stock !== undefined ? i.stock : 50; // Default stock if undefined
+                    
+                    // Logic for Stock Color
+                    let stockClass = "stock-tag";
+                    if(stock < 5) stockClass += " stock-low";
+                    if(stock === 0) stockClass += " stock-out";
+
                     list.innerHTML += `
                     <div class="item-card">
                         <img src="${i.image}" class="item-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/754/754857.png'">
                         <div class="item-content">
                             <div class="item-name">${name}</div>
-                            <div class="item-meta">${i.category}</div>
+                            <div class="item-meta">${i.category} <span class="${stockClass}">${stock} Left</span></div>
                             <div class="price-tag">₹${i.price}</div>
                         </div>
                         <div class="item-controls">
@@ -170,7 +185,7 @@
                                 <span class="slider"></span>
                             </label>
                             <div class="actions">
-                                <button class="btn-icon btn-edit" onclick="startEdit('${i._id}', '${name}', '${i.price}', '${i.category}', '${i.image}')">
+                                <button class="btn-icon btn-edit" onclick="startEdit('${i._id}', '${name}', '${i.price}', '${i.category}', '${i.image}', '${stock}')">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
                                 <button class="btn-icon btn-del" onclick="deleteItem('${i._id}')">
@@ -194,14 +209,15 @@
             }
         }
 
-        // 🔥 START EDIT MODE
-        function startEdit(id, name, price, cat, img) {
+        // 🔥 START EDIT MODE (Updated with Stock)
+        function startEdit(id, name, price, cat, img, stock) {
             editMode = true;
             editId = id;
             
             // Populate Form
             document.getElementById('nItem').value = name;
             document.getElementById('nPrice').value = price;
+            document.getElementById('nStock').value = stock || 50; // Set Stock
             document.getElementById('nCat').value = cat;
             document.getElementById('nImg').value = img;
             updatePreview(img);
@@ -223,6 +239,7 @@
             editId = null;
             document.getElementById('nItem').value = "";
             document.getElementById('nPrice').value = "";
+            document.getElementById('nStock').value = ""; // Clear Stock
             document.getElementById('nImg').value = "";
             updatePreview("");
 
@@ -234,10 +251,11 @@
             document.getElementById('cancelEditBtn').style.display = 'none';
         }
 
-        // 🔥 HANDLE SAVE (ADD or UPDATE)
+        // 🔥 HANDLE SAVE (ADD or UPDATE with Stock)
         async function handleSave() {
             const name = document.getElementById('nItem').value;
             const price = document.getElementById('nPrice').value;
+            const stock = document.getElementById('nStock').value || 50; // Get Stock
             const cat = document.getElementById('nCat').value;
             const img = document.getElementById('nImg').value || "https://cdn-icons-png.flaticon.com/512/754/754857.png";
 
@@ -257,10 +275,10 @@
                     });
                 }
 
-                // Add New Item (Logic same for both Add & Edit)
+                // Add New Item (Now sending 'stock')
                 const res = await fetch(API_ADD, {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name, price, category: cat, image: img })
+                    body: JSON.stringify({ name, price, stock, category: cat, image: img }) 
                 });
                 
                 const data = await res.json();
@@ -304,4 +322,3 @@
     </script>
 </body>
 </html>
-
