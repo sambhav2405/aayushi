@@ -119,11 +119,27 @@
         .status-Accepted { border-left-color: #3498db; } .status-Accepted .track-status { background: #e3f2fd; color: #2980b9; } 
         .status-Ready { border-left-color: #2ecc71; } .status-Ready .track-status { background: #e8f5e9; color: #27ae60; }
         
+        /* 🔥 NEW MODAL STYLES */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 5000; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 25px; width: 85%; max-width: 360px; text-align: center; animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-content { background: white; padding: 25px; border-radius: 25px; width: 90%; max-width: 380px; text-align: center; animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 90vh; overflow-y: auto; }
         @keyframes popUp { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
-        input { width: 100%; padding: 14px; margin-bottom: 12px; border: 2px solid #f1f2f6; border-radius: 12px; font-weight: 600; background: #f9f9f9; outline: none; font-size: 15px; transition: 0.3s; }
-        input:focus { border-color: var(--primary); background: white; }
+        
+        .inp-field { width: 100%; padding: 14px; margin-bottom: 12px; border: 2px solid #f1f2f6; border-radius: 12px; font-weight: 600; background: #f9f9f9; outline: none; font-size: 15px; transition: 0.3s; }
+        .inp-field:focus { border-color: var(--primary); background: white; }
+
+        /* Payment Tabs */
+        .pay-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .pay-tab { flex: 1; padding: 12px; border: 2px solid #f1f2f6; border-radius: 12px; cursor: pointer; font-weight: 700; color: #b2bec3; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; }
+        .pay-tab i { font-size: 20px; }
+        .pay-tab.active { border-color: var(--primary); background: #ffebee; color: var(--primary); }
+
+        /* Coupon Section */
+        .coupon-box { display: flex; gap: 8px; margin-bottom: 15px; }
+        .apply-btn { background: var(--dark); color: white; border: none; padding: 0 15px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+
+        /* QR Section */
+        #qr-section { display: none; margin-bottom: 15px; background: #f8f9fa; padding: 15px; border-radius: 15px; border: 1px dashed #ccc; }
+        #qr-img { width: 140px; height: 140px; margin-bottom: 5px; mix-blend-mode: multiply; }
 
         #toast { visibility: hidden; min-width: 250px; background: #2d3436; color: #fff; text-align: center; border-radius: 50px; padding: 14px; position: fixed; z-index: 6000; left: 50%; transform: translateX(-50%); bottom: 30px; font-size: 14px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.0s; }
@@ -228,22 +244,43 @@
     <div id="paymentModal" class="modal">
         <div class="modal-content">
             <h2 style="margin-bottom:5px;">Total: ₹<span id="pay-amount">0</span></h2>
-            <div style="background:#e8f5e9; color:#27ae60; padding:12px; border-radius:12px; margin-bottom:20px; font-weight:700; border:1px solid #27ae60; font-size:13px;">
-                👋 Payment भैया को काउंटर पर करें।
+            <div style="font-size:12px; color:#888; margin-bottom:15px;">Complete your order</div>
+
+            <div class="pay-tabs">
+                <div class="pay-tab active" id="tab-cod" onclick="selectPaymentMode('COD')">
+                    <i class="fa-solid fa-money-bill-wave"></i> Cash / Counter
+                </div>
+                <div class="pay-tab" id="tab-online" onclick="selectPaymentMode('Online')">
+                    <i class="fa-solid fa-qrcode"></i> Pay Online
+                </div>
             </div>
-            <input type="text" id="student-name" placeholder="Enter Your Name">
-            <input type="tel" id="student-phone" placeholder="Mobile Number">
-           <label style="font-size:12px; font-weight:bold; color:#555; margin-top:10px; display:block;">Delivery Location:</label>
-<div style="display:flex; gap:8px; margin-bottom:15px;">
-    <input type="text" id="delivery-location" placeholder="Eg: Hostel Room 101" style="margin-bottom:0; flex:1;">
-    
-    <button onclick="getGPSLocation()" id="gps-btn" style="width:50px; background:#e3f2fd; color:#0984e3; border:1px solid #0984e3; border-radius:12px; cursor:pointer; font-size:18px;">
-        <i class="fa-solid fa-location-crosshairs"></i>
-    </button>
-</div>
+
+            <div id="qr-section">
+                <img id="qr-img" src="" alt="QR Code">
+                <div style="font-size:11px; color:#666;">Scan to Pay <b>₹<span id="qr-amt">0</span></b></div>
+                <div style="font-size:10px; color:#999; margin-top:5px;">UPI: jainsambhav877@oksbi</div>
+            </div>
+
+            <input type="text" class="inp-field" id="student-name" placeholder="Enter Your Name">
+            <input type="tel" class="inp-field" id="student-phone" placeholder="Mobile Number">
+
+            <div class="coupon-box">
+                <input type="text" class="inp-field" id="coupon-code" placeholder="Coupon Code (e.g. WELCOME50)" style="margin-bottom:0;">
+                <button class="apply-btn" onclick="applyCoupon()">Apply</button>
+            </div>
+            <div id="coupon-msg" style="font-size:11px; margin-bottom:15px; text-align:left; display:none;"></div>
+
+            <label style="font-size:12px; font-weight:bold; color:#555; margin-top:5px; display:block; text-align:left;">Delivery Location:</label>
+            <div style="display:flex; gap:8px; margin-bottom:15px;">
+                <input type="text" class="inp-field" id="delivery-location" placeholder="Eg: Hostel Room 101" style="margin-bottom:0; flex:1;">
+                <button onclick="getGPSLocation()" id="gps-btn" style="width:50px; background:#e3f2fd; color:#0984e3; border:1px solid #0984e3; border-radius:12px; cursor:pointer; font-size:18px;">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                </button>
+            </div>
+
             <div style="display:flex; gap:12px; margin-top:10px;">
                 <button onclick="document.getElementById('paymentModal').style.display='none'" style="flex:1; padding:14px; background:#f1f2f6; border:none; border-radius:12px; font-weight:bold; cursor:pointer; color:#636e72;">Cancel</button>
-                <button onclick="verifyAndOrder()" style="flex:1; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">Confirm</button>
+                <button onclick="verifyAndOrder()" style="flex:1; padding:14px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">Confirm Order</button>
             </div>
         </div>
     </div>
@@ -280,6 +317,10 @@
         let cart = {};
         let isShopOpen = true;
         let selectedTime = "ASAP";
+        let paymentMode = "COD"; // Default
+        let currentTotal = 0; // Track total for coupons
+        let appliedCoupon = null; // Store applied coupon data
+        let discountAmount = 0;
 
         window.onload = async () => {
             await fetchMenu(); // Load Menu from DB
@@ -453,6 +494,7 @@
             document.getElementById('cart-count').innerText = count;
             document.querySelector('.badge').style.display = count > 0 ? 'flex' : 'none';
             document.querySelector('.badge').innerText = count;
+            currentTotal = subTotal; // Update global total
         }
 
         // SIDEBAR UTILS
@@ -474,27 +516,83 @@
             overlay.classList.remove('active');
         }
 
-        // PAYMENT FLOW
-      async function openPayment() {
-    await checkShopStatus();
-    if(!isShopOpen) return showClosedMessage(); 
-    if(document.getElementById('final-total').innerText == 0) return Swal.fire('Cart Empty', 'Add items first! 🍔', 'question');
-    
-    // Auto-Fill Data from Local Storage
-    document.getElementById('student-name').value = localStorage.getItem('savedName') || '';
-    document.getElementById('student-phone').value = localStorage.getItem('savedPhone') || '';
-    
-    // 🔥 NEW: Last Saved Location Auto-Fill
-    document.getElementById('delivery-location').value = localStorage.getItem('savedLocation') || '';
-    
-    // GPS Button Reset
-    document.getElementById('gps-btn').innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
-    document.getElementById('gps-btn').style.background = "#e3f2fd";
+       // --- PAYMENT & COUPON LOGIC ---
+        async function openPayment() {
+            await checkShopStatus();
+            if(!isShopOpen) return showClosedMessage(); 
+            if(currentTotal == 0) return Swal.fire('Cart Empty', 'Add items first! 🍔', 'question');
+            
+            // Auto Fill
+            document.getElementById('student-name').value = localStorage.getItem('savedName') || '';
+            document.getElementById('student-phone').value = localStorage.getItem('savedPhone') || '';
+            document.getElementById('delivery-location').value = localStorage.getItem('savedLocation') || '';
+            
+            // Reset Coupon & Payment Mode
+            appliedCoupon = null; discountAmount = 0;
+            document.getElementById('coupon-code').value = "";
+            document.getElementById('coupon-msg').style.display = "none";
+            document.getElementById('pay-amount').innerText = currentTotal;
+            selectPaymentMode('COD'); // Default back to COD
 
-    window.finalOrderTime = selectedTime === 'Schedule' ? "Schedule: " + document.getElementById('custom-time').value : selectedTime;
-    closeAllSidebars(); 
-    document.getElementById('paymentModal').style.display='flex';
-}
+            window.finalOrderTime = selectedTime === 'Schedule' ? "Schedule: " + document.getElementById('custom-time').value : selectedTime;
+            closeAllSidebars(); document.getElementById('paymentModal').style.display='flex';
+        }
+
+        function selectPaymentMode(mode) {
+            paymentMode = mode;
+            document.getElementById('tab-cod').classList.remove('active');
+            document.getElementById('tab-online').classList.remove('active');
+            
+            if(mode === 'Online') {
+                document.getElementById('tab-online').classList.add('active');
+                document.getElementById('qr-section').style.display = 'block';
+                // 🔥 Generate Dynamic QR Code
+                const finalAmt = appliedCoupon ? (currentTotal - discountAmount) : currentTotal;
+                const upiLink = `upi://pay?pa=jainsambhav877@oksbi&pn=ErsCafe&am=${finalAmt}&cu=INR`;
+                document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiLink)}`;
+                document.getElementById('qr-amt').innerText = finalAmt;
+            } else {
+                document.getElementById('tab-cod').classList.add('active');
+                document.getElementById('qr-section').style.display = 'none';
+            }
+        }
+
+        async function applyCoupon() {
+            const code = document.getElementById('coupon-code').value.trim();
+            if(!code) return;
+            
+            const btn = document.querySelector('.apply-btn');
+            const msg = document.getElementById('coupon-msg');
+            btn.innerHTML = "...";
+            
+            try {
+                const res = await fetch('/api/verify-coupon', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ code, total: currentTotal })
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    appliedCoupon = data.code;
+                    discountAmount = data.discount;
+                    msg.style.display = "block";
+                    msg.style.color = "green";
+                    msg.innerHTML = `✅ <b>${data.code}</b> Applied! You saved ₹${data.discount}`;
+                    document.getElementById('pay-amount').innerText = data.newTotal;
+                    
+                    // Regenerate QR if in Online mode
+                    if(paymentMode === 'Online') selectPaymentMode('Online'); 
+                } else {
+                    msg.style.display = "block";
+                    msg.style.color = "red";
+                    msg.innerText = "❌ " + data.message;
+                    appliedCoupon = null; discountAmount = 0;
+                    document.getElementById('pay-amount').innerText = currentTotal;
+                }
+            } catch(e) { console.log(e); }
+            btn.innerHTML = "Apply";
+        }
+
 // --- 📍 GPS LOCATION LOGIC ---
 function getGPSLocation() {
     const btn = document.getElementById('gps-btn');
@@ -542,67 +640,53 @@ function showError(error) {
 }
       // 🔥 Updated verifyAndOrder to include item ID for stock management
       async function verifyAndOrder() {
-    const name = document.getElementById('student-name').value;
-    const phone = document.getElementById('student-phone').value;
-    // 🔥 New: Location Input se value uthana
-    const locationVal = document.getElementById('delivery-location').value;
+            const name = document.getElementById('student-name').value;
+            const phone = document.getElementById('student-phone').value;
+            const locationVal = document.getElementById('delivery-location').value;
 
-    if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai! 😅', 'question');
-    if(!locationVal) return Swal.fire('Location?', 'Kahan deliver karna hai? (Room No. ya GPS)', 'question');
+            if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai!', 'question');
+            if(!locationVal) return Swal.fire('Location?', 'Kahan deliver karna hai?', 'question');
 
-    // 🔥 Include 'id' in the items array for the server
-    const finalItems = Object.keys(cart).map(id => {
-        const item = menuItems.find(i => i._id == id);
-        return { 
-            id: id, // 🔥 ID added here
-            name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, 
-            qty: cart[id].qty, 
-            price: item.price 
-        };
-    });
-    
-    const total = document.getElementById('final-total').innerText;
-    const deviceId = localStorage.getItem('canteen_device_id') || 'unknown'; 
+            const finalItems = Object.keys(cart).map(id => {
+                const item = menuItems.find(i => i._id == id);
+                return { id: id, name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, qty: cart[id].qty, price: item.price };
+            });
 
-    try {
-        const res = await fetch('/api/order', {
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                name, phone: phone || "999", items: finalItems, total, finalTotal: total, 
-                mode: "Mixed", pickupTime: window.finalOrderTime, paymentId: 'Pay at Counter', deviceId,
-                location: locationVal // 🔥 Ye User ki current location jayegi
-            })
-        });
-        
-        const data = await res.json();
-        
-        if(data.success) {
-            // 🔥 SAVE NEW DATA TO LOCAL STORAGE
-            localStorage.setItem('savedName', name); 
-            localStorage.setItem('savedPhone', phone);
-            localStorage.setItem('savedLocation', locationVal); // New Location Save ho gayi
+            // Calculate final total based on coupon
+            const finalPayable = appliedCoupon ? (currentTotal - discountAmount) : currentTotal;
 
-            document.getElementById('paymentModal').style.display = 'none';
-            Swal.fire({ icon: 'success', title: 'Order Placed! 🎉', text: `Order ID: #${data.orderId}`, timer: 4000 });
-            
-            // Save History Logic (Same as before)
-            const myOrder = { orderId: data.orderId, items: finalItems, total: total, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), status: 'Pending' };
-            saveLocalHistory(myOrder);
-
-            cart = {}; updateCartUI(); 
-            // Refresh menu to update stock display
-            fetchMenu();
-            setTimeout(() => openSidebar('history'), 1000);
-        } else {
-            document.getElementById('paymentModal').style.display = 'none';
-            if(data.message === "Shop Closed") showClosedMessage(); else Swal.fire('Oops!', data.message, 'error');
+            try {
+                const res = await fetch('/api/order', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        name, phone: phone || "999", items: finalItems, 
+                        total: currentTotal, finalTotal: finalPayable, 
+                        mode: "Mixed", pickupTime: window.finalOrderTime, 
+                        paymentId: 'Pay at Counter', deviceId: 'web', location: locationVal,
+                        // 🔥 New Fields
+                        paymentMode: paymentMode,
+                        coupon: appliedCoupon,
+                        discount: discountAmount
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if(data.success) {
+                    localStorage.setItem('savedName', name); localStorage.setItem('savedPhone', phone); localStorage.setItem('savedLocation', locationVal);
+                    document.getElementById('paymentModal').style.display = 'none';
+                    Swal.fire({ icon: 'success', title: 'Order Placed! 🎉', text: `Order ID: #${data.orderId}`, timer: 4000 });
+                    
+                    saveLocalHistory({ orderId: data.orderId, items: finalItems, total: finalPayable, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+                    cart = {}; updateCartUI(); fetchMenu(); setTimeout(() => openSidebar('history'), 1000);
+                } else {
+                    document.getElementById('paymentModal').style.display = 'none';
+                    if(data.message === "Shop Closed") showClosedMessage(); else Swal.fire('Oops!', data.message, 'error');
+                }
+            } catch(e) { 
+                document.getElementById('paymentModal').style.display = 'none'; Swal.fire('Network Error', 'Check Internet', 'error'); 
+            }
         }
-    } catch(e) { 
-        document.getElementById('paymentModal').style.display = 'none';
-        Swal.fire('Network Error', 'Internet check karo! 📶', 'error'); 
-    }
-}
 
         // --- 🔥 LOCAL STORAGE HISTORY LOGIC ---
         function saveLocalHistory(order) {
