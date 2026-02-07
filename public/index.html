@@ -6,7 +6,7 @@
     <title>Er's Cafe - Fast Bites</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#e74c3c">
+    <meta name="theme-color" content="#0fb9b1">
     <link rel="apple-touch-icon" href="logo.png">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,12 +15,39 @@
     
     <style>
         /* --- CORE STYLES --- */
-        :root { --primary: #e74c3c; --dark: #2d3436; --light: #f5f6fa; --white: #ffffff; --green: #2ecc71; --blue: #0984e3; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--light); color: var(--dark); padding-bottom: 100px; overflow-x: hidden; }
+      :root {
+    /* 🔥 Unique "Ocean Fresh" Palette */
+    --primary: #0fb9b1;  /* Vibrant Turquoise (Teal) */
+    --dark: #2d3436;     /* Midnight Grey */
+    --light: #f1f2f6;    /* Soft Cloud White */
+    --white: #ffffff;
+    --shadow: 0 10px 30px rgba(15, 185, 177, 0.15); /* Coloured Shadow */
+}
 
-        /* HEADER */
-        header { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); padding: 10px 5%; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); }
+/* Background gradient for body to make it look premium */
+body { 
+    font-family: 'Poppins', sans-serif; 
+    background: linear-gradient(180deg, #f1f2f6 0%, #ffffff 100%); 
+    color: var(--dark); 
+    margin: 0; 
+    padding-bottom: 100px; 
+}
+
+/* Header Update for new theme */
+header { 
+    background: rgba(255, 255, 255, 0.9); 
+    backdrop-filter: blur(10px); 
+    border-bottom: 1px solid rgba(15, 185, 177, 0.1); 
+}
+
+/* Button & Active State Update */
+.filter-btn.active, .checkout-btn, .option-btn.selected, .qty-btn {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.qty-btn { color: white; } /* Plus minus buttons white text */
+.card-price { color: #eb4d4b; } /* Price thoda alag highlight ho */
         .logo { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 5px; }
         .version-tag { font-family: 'Courier Prime', monospace; font-size: 10px; background: #ffebee; color: var(--primary); padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(231, 76, 60, 0.2); margin-left: 5px; }
         
@@ -151,7 +178,16 @@
 
         /* 🔥 FIX Z-INDEX */
         div:where(.swal2-container) { z-index: 10000 !important; }
+        
+.filter-btn.active, .checkout-btn, .option-btn.selected, .qty-btn {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.qty-btn { color: white; } /* Plus minus buttons white text */
+.card-price { color: #eb4d4b; } /* Price thoda alag highlight ho */
     </style>
+    
 </head>
 <body>
 
@@ -172,10 +208,10 @@
         </div>
     </header>
 
-    <section class="hero">
-        <h1>Tasty Food 🍔</h1>
-        <p>ER'S CAFE - SKIT Jaipur</p>
-    </section>
+    <section class="hero" style="background: linear-gradient(135deg, #0fb9b1, #2bcbba); box-shadow: 0 10px 25px rgba(15, 185, 177, 0.4);">
+    <h1 style="font-size: 26px; text-shadow: 0 2px 5px rgba(0,0,0,0.1);">Fresh & Fast ⚡</h1>
+    <p style="opacity: 0.9;">Superfast Delivery Store</p>
+</section>
 
     <div class="app-banner" id="installBanner">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -190,20 +226,17 @@
 
     <section class="controls">
         <input type="text" class="search-box" placeholder="🔍 Search Pizza, Maggi..." onkeyup="filterMenu(this.value)">
-        <div class="filters">
-            <button class="filter-btn active" onclick="filterCat('All')">All</button>
-            <button class="filter-btn" onclick="filterCat('Burger')">Burger</button>
-            <button class="filter-btn" onclick="filterCat('Pizza')">Pizza</button>
-            <button class="filter-btn" onclick="filterCat('Maggi')">Maggi</button>
-            <button class="filter-btn" onclick="filterCat('Sandwich')">Sandwich</button>
-            <button class="filter-btn" onclick="filterCat('Chinese')">Chinese</button>
-            <button class="filter-btn" onclick="filterCat('Rolls')">Rolls</button>
-            <button class="filter-btn" onclick="filterCat('Patties')">Patties</button>
-            <button class="filter-btn" onclick="filterCat('Momos')">Momos</button>
-            <button class="filter-btn" onclick="filterCat('Pasta')">Pasta</button>
-            <button class="filter-btn" onclick="filterCat('Snacks')">Snacks</button>
-            <button class="filter-btn" onclick="filterCat('Drinks')">Drinks</button>
-        </div>
+      <div class="filters">
+    <button class="filter-btn active" onclick="filterCat('All')">All</button>
+    <button class="filter-btn" onclick="filterCat('Munchies')">🍪 Munchies</button>
+    <button class="filter-btn" onclick="filterCat('Beverages')">🥤 Drinks</button>
+    <button class="filter-btn" onclick="filterCat('FruitsVeg')">🥦 Fresh</button>
+    <button class="filter-btn" onclick="filterCat('Electronics')">🎧 Electronics</button>
+    <button class="filter-btn" onclick="filterCat('DairyBread')">🥛 Dairy</button>
+    <button class="filter-btn" onclick="filterCat('Pharma')">💊 Pharma</button>
+    <button class="filter-btn" onclick="filterCat('PersonalCare')">🚿 Care</button>
+    <button class="filter-btn" onclick="filterCat('HomeNeeds')">🏠 Home</button>
+</div>
     </section>
 
     <section class="menu-grid" id="menu-container"></section>
