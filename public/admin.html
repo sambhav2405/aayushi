@@ -156,7 +156,7 @@
         
         async function loadData() {
             loadOrders();
-            loadRevenue(); // 🔥 Load Revenue Separately
+            loadRevenue(); 
         }
 
         async function loadOrders() {
@@ -175,7 +175,6 @@
             } catch(e) {}
         }
 
-        // 🔥 NEW: Fetch Revenue from Persistent DB (Not Active Orders)
         async function loadRevenue() {
             try {
                 const res = await fetch('/api/admin/revenue');
@@ -209,40 +208,54 @@
                 const searchVal = o.status === 'Pending' ? searchFilters.new : searchFilters.prep;
                 if(searchVal && !o.orderId.includes(searchVal) && !o.name.toLowerCase().includes(searchVal)) return;
 
-        // Is logic ko update karein:
-let locationHtml = '';
-if (o.location && o.location.includes('http')) {
-    // Agar Google Map Link hai
-    locationHtml = `<a href="${o.location}" target="_blank" style="font-size:12px; background:#e3f2fd; color:#0984e3; padding:4px 8px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; border:1px solid #0984e3;"><i class="fa-solid fa-map-location-dot"></i> Map</a>`;
-} else if (o.location) {
-    // Agar Manual Text hai (Eg: Room 302)
-    locationHtml = `<span style="font-size:12px; background:#fff3e0; color:#e67e22; padding:4px 8px; border-radius:8px; border:1px solid #e67e22;"><i class="fa-solid fa-location-dot"></i> ${o.location}</span>`;
-}
+                // Location Logic
+                let locationHtml = '';
+                if (o.location && o.location.includes('http')) {
+                    locationHtml = `<a href="${o.location}" target="_blank" style="font-size:12px; background:#e3f2fd; color:#0984e3; padding:4px 8px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; border:1px solid #0984e3;"><i class="fa-solid fa-map-location-dot"></i> Map</a>`;
+                } else if (o.location) {
+                    locationHtml = `<span style="font-size:12px; background:#fff3e0; color:#e67e22; padding:4px 8px; border-radius:8px; border:1px solid #e67e22;"><i class="fa-solid fa-location-dot"></i> ${o.location}</span>`;
+                }
 
-const html = `
-<div class="admin-card ${o.status==='Pending'?'new':'prep'}" onclick="stopAlarm()">
-    <div class="card-top"><span>#${o.orderId}</span> <span>${o.pickupTime}</span></div>
-    
-    <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between; align-items:flex-start;">
-        <span style="max-width:60%">${o.name}</span>
-        ${locationHtml} </div>
+                // 🔥 Payment Status Badge Logic
+                let payStatusHtml = '';
+                if (o.paymentMode === 'Online') {
+                    payStatusHtml = `<span style="background:#e8f5e9; color:#27ae60; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:800; border:1px solid #27ae60;">🟢 ONLINE PAY</span>`;
+                } else {
+                    payStatusHtml = `<span style="background:#fff3e0; color:#d35400; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:800; border:1px solid #d35400;">🔴 CASH / COD</span>`;
+                }
 
-    <div style="font-size:13px; color:#555; margin-bottom:10px;">
-        ${o.items.map(i => `<div>${i.qty} x ${i.name.replace('(📦 PACKED)', '')} ${i.name.includes('PACKED')?'<span class="pack-badge">PACK</span>':''}</div>`).join('')}
-    </div>
-    
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <span style="font-weight:bold; font-size:16px;">₹${o.finalTotal}</span>
-        <span style="font-size:11px; background:#e8f5e9; color:#27ae60; padding:3px 8px; border-radius:10px;">${o.paymentId || 'Cash'}</span>
-    </div>
-    <div class="action-row">
-        ${o.status === 'Pending' ? 
-        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Accepted')">Accept</button>
-         <button class="btn-action btn-red" onclick="event.stopPropagation(); deleteOrder('${o.orderId}')">Reject</button>` : 
-        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Ready')">Ready</button>
-         <button class="btn-action btn-dark" onclick="markCompleted('${o.orderId}')">Done</button>`}
-    </div>
-</div>`;
+                // Price with Discount Display
+                let priceHtml = `<span style="font-weight:bold; font-size:16px;">₹${o.finalTotal}</span>`;
+                if(o.discount > 0) {
+                    priceHtml += `<small style="display:block; font-size:10px; color:#e74c3c;">(Cpn: ${o.coupon} -₹${o.discount})</small>`;
+                }
+
+                const html = `
+                <div class="admin-card ${o.status==='Pending'?'new':'prep'}" onclick="stopAlarm()">
+                    <div class="card-top"><span>#${o.orderId}</span> <span>${o.pickupTime}</span></div>
+                    
+                    <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between; align-items:flex-start;">
+                        <span style="max-width:60%">${o.name}</span>
+                        ${locationHtml}
+                    </div>
+
+                    <div style="font-size:13px; color:#555; margin-bottom:10px;">
+                        ${o.items.map(i => `<div>${i.qty} x ${i.name.replace('(📦 PACKED)', '')} ${i.name.includes('PACKED')?'<span class="pack-badge">PACK</span>':''}</div>`).join('')}
+                    </div>
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <div>${priceHtml}</div>
+                        ${payStatusHtml}
+                    </div>
+
+                    <div class="action-row">
+                        ${o.status === 'Pending' ? 
+                        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Accepted')">Accept</button>
+                        <button class="btn-action btn-red" onclick="event.stopPropagation(); deleteOrder('${o.orderId}')">Reject</button>` : 
+                        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Ready')">Ready</button>
+                        <button class="btn-action btn-dark" onclick="markCompleted('${o.orderId}')">Done</button>`}
+                    </div>
+                </div>`;
                 
                 if(o.status === 'Pending') listNew.innerHTML += html; else listPrep.innerHTML += html;
             });
