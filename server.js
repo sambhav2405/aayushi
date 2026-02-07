@@ -41,7 +41,8 @@ const itemSchema = new mongoose.Schema({
     category: { type: String, required: true },
     image: { type: String, default: 'https://cdn-icons-png.flaticon.com/512/754/754857.png' },
     isAvailable: { type: Boolean, default: true },
-    isBestSeller: { type: Boolean, default: false }
+    isBestSeller: { type: Boolean, default: false },
+    stock: { type: Number, default: 50 } // 🔥 Stock Added
 });
 const Item = mongoose.model('Item', itemSchema);
 
@@ -100,20 +101,43 @@ async function sendTelegramAlert(order) {
 app.get('/api/menu', async (req, res) => res.json(await Item.find()));
 
 // 2. ORDER APIs (Public)
+// 🔥 Updated Order Logic with Stock Check
 app.post('/api/order', async (req, res) => {
     try {
+        const { items } = req.body;
+
+        // 1. Check Stock Availability
+        for (const item of items) {
+            // Find item in DB using ID passed from frontend (ensure frontend sends item.id)
+            // If frontend sends id inside item object, access it correctly. 
+            // Assuming frontend sends { id: "...", qty: ... } inside items array
+            const dbItem = await Item.findById(item.id); 
+            
+            if (!dbItem) continue; // Skip if item not found (or handle error)
+
+            if (dbItem.stock < item.qty) {
+                return res.json({ success: false, message: `Oops! ${dbItem.name} bas ${dbItem.stock} bache hain.` });
+            }
+        }
+
+        // 2. Reduce Stock
+        for (const item of items) {
+            await Item.findByIdAndUpdate(item.id, { $inc: { stock: -item.qty } });
+        }
+
+        // 3. Place Order
         const uniqueCode = Math.floor(100000 + Math.random() * 900000).toString();
         const newOrder = new Order({ orderId: uniqueCode, ...req.body });
         await newOrder.save();
         
-        // Non-blocking calls (wait karne ki zarurat nahi)
+        // Non-blocking calls
         sendTelegramAlert(newOrder); 
         updateDailyRevenue(newOrder.finalTotal);
         
         res.json({ success: true, orderId: uniqueCode });
     } catch (e) { 
         console.error("Order Error:", e);
-        res.json({ success: false }); 
+        res.json({ success: false, message: "Server Error" }); 
     }
 });
 
@@ -135,9 +159,12 @@ app.post('/api/admin/login', async (req, res) => {
     } catch (e) { res.json({ success: false }); }
 });
 
+// 🔥 Updated Add Item Logic to include Stock
 app.post('/api/admin/add-item', async (req, res) => { 
     try {
         if(!req.body.name || !req.body.price) return res.json({ success: false });
+        
+        // Stock is now saved from req.body
         await new Item(req.body).save(); 
         res.json({ success: true });
     } catch(e) { res.json({ success: false, error: e.message }); }
