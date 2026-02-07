@@ -233,9 +233,12 @@
             </div>
             <input type="text" id="student-name" placeholder="Enter Your Name">
             <input type="tel" id="student-phone" placeholder="Mobile Number">
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-    <input type="text" id="location-link" style="display:none;"> <button onclick="getLocation()" id="loc-btn" style="width:100%; padding:12px; background:#e3f2fd; color:#0984e3; border:1px dashed #0984e3; border-radius:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-        <i class="fa-solid fa-location-crosshairs"></i> Share My Current Location
+           <label style="font-size:12px; font-weight:bold; color:#555; margin-top:10px; display:block;">Delivery Location:</label>
+<div style="display:flex; gap:8px; margin-bottom:15px;">
+    <input type="text" id="delivery-location" placeholder="Eg: GIVE LOCATION" style="margin-bottom:0; flex:1;">
+    
+    <button onclick="getGPSLocation()" id="gps-btn" style="width:50px; background:#e3f2fd; color:#0984e3; border:1px solid #0984e3; border-radius:12px; cursor:pointer; font-size:18px;">
+        <i class="fa-solid fa-location-crosshairs"></i>
     </button>
 </div>
             <div style="display:flex; gap:12px; margin-top:10px;">
@@ -443,29 +446,47 @@
         }
 
         // PAYMENT FLOW
-        async function openPayment() {
-            await checkShopStatus(); // Double check before opening
-            if(!isShopOpen) return showClosedMessage(); 
-
-            if(document.getElementById('final-total').innerText == 0) return Swal.fire('Cart Empty', 'Add items first! 🍔', 'question');
-            
-            document.getElementById('student-name').value = localStorage.getItem('savedName') || '';
-            document.getElementById('student-phone').value = localStorage.getItem('savedPhone') || '';
-            
-            window.finalOrderTime = selectedTime === 'Schedule' ? "Schedule: " + document.getElementById('custom-time').value : selectedTime;
-            closeAllSidebars(); 
-            document.getElementById('paymentModal').style.display='flex';
-        }
-// --- 📍 GPS LOCATION LOGIC ---
-function getLocation() {
-    const btn = document.getElementById('loc-btn');
-    const input = document.getElementById('location-link');
+      async function openPayment() {
+    await checkShopStatus();
+    if(!isShopOpen) return showClosedMessage(); 
+    if(document.getElementById('final-total').innerText == 0) return Swal.fire('Cart Empty', 'Add items first! 🍔', 'question');
     
+    // Auto-Fill Data from Local Storage
+    document.getElementById('student-name').value = localStorage.getItem('savedName') || '';
+    document.getElementById('student-phone').value = localStorage.getItem('savedPhone') || '';
+    
+    // 🔥 NEW: Last Saved Location Auto-Fill
+    document.getElementById('delivery-location').value = localStorage.getItem('savedLocation') || '';
+    
+    // GPS Button Reset
+    document.getElementById('gps-btn').innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+    document.getElementById('gps-btn').style.background = "#e3f2fd";
+
+    window.finalOrderTime = selectedTime === 'Schedule' ? "Schedule: " + document.getElementById('custom-time').value : selectedTime;
+    closeAllSidebars(); 
+    document.getElementById('paymentModal').style.display='flex';
+}
+// --- 📍 GPS LOCATION LOGIC ---
+function getGPSLocation() {
+    const btn = document.getElementById('gps-btn');
     if (navigator.geolocation) {
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
-        navigator.geolocation.getCurrentPosition(showPosition, showError);
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; // Loading icon
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const long = position.coords.longitude;
+            // Google Maps Link In Input Box
+            const link = `http://maps.google.com/maps?q=${lat},${long}`;
+            
+            document.getElementById('delivery-location').value = link; // 🔥 Input me link daal diya
+            
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            btn.style.background = "#e8f5e9";
+        }, () => {
+            Swal.fire("Error", "Location permission denied.", "error");
+            btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
+        });
     } else {
-        Swal.fire("Error", "Geolocation is not supported by this browser.", "error");
+        Swal.fire("Error", "GPS not supported.", "error");
     }
 }
 
@@ -490,83 +511,56 @@ function showError(error) {
     btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Permission Denied';
     Swal.fire("Location Error", "Please allow location access.", "warning");
 }
-        async function verifyAndOrder() {
-    // 1. सबसे पहले इनपुट्स की वैल्यू उठाएं
+      async function verifyAndOrder() {
     const name = document.getElementById('student-name').value;
     const phone = document.getElementById('student-phone').value;
+    // 🔥 New: Location Input se value uthana
+    const locationVal = document.getElementById('delivery-location').value;
 
-    // 2. चेक करें नाम भरा है या नहीं
     if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai! 😅', 'question');
+    if(!locationVal) return Swal.fire('Location?', 'Kahan deliver karna hai? (Room No. ya GPS)', 'question');
 
-    // 3. 🔥 FIX: finalItems को fetch से पहले बनाना ज़रूरी है
     const finalItems = Object.keys(cart).map(id => {
         const item = menuItems.find(i => i._id == id);
-        return { 
-            name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, 
-            qty: cart[id].qty, 
-            price: item.price 
-        };
+        return { name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, qty: cart[id].qty, price: item.price };
     });
-
-    // 4. बाकी डेटा तैयार करें
+    
     const total = document.getElementById('final-total').innerText;
     const deviceId = localStorage.getItem('canteen_device_id') || 'unknown'; 
-    const locationUrl = document.getElementById('location-link').value || ""; // Location भी उठा ली
 
-    // 5. सर्वर को रिक्वेस्ट भेजें (अब finalItems बन चुका है, तो Error नहीं आएगा)
     try {
         const res = await fetch('/api/order', {
             method: 'POST', 
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
-                name, 
-                phone: phone || "999", 
-                items: finalItems, // ✅ यहाँ अब यह defined है
-                total, 
-                finalTotal: total, 
-                mode: "Mixed", 
-                pickupTime: window.finalOrderTime, 
-                paymentId: 'Pay at Counter', 
-                deviceId,
-                location: locationUrl 
+                name, phone: phone || "999", items: finalItems, total, finalTotal: total, 
+                mode: "Mixed", pickupTime: window.finalOrderTime, paymentId: 'Pay at Counter', deviceId,
+                location: locationVal // 🔥 Ye User ki current location jayegi
             })
         });
         
         const data = await res.json();
         
         if(data.success) {
-            // Local Storage में सेव करें
+            // 🔥 SAVE NEW DATA TO LOCAL STORAGE
             localStorage.setItem('savedName', name); 
             localStorage.setItem('savedPhone', phone);
-            
-            const myOrder = {
-                orderId: data.orderId,
-                items: finalItems,
-                total: total,
-                date: new Date().toLocaleDateString(),
-                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                status: 'Pending'
-            };
-            saveLocalHistory(myOrder);
+            localStorage.setItem('savedLocation', locationVal); // New Location Save ho gayi
 
             document.getElementById('paymentModal').style.display = 'none';
+            Swal.fire({ icon: 'success', title: 'Order Placed! 🎉', text: `Order ID: #${data.orderId}`, timer: 4000 });
             
-            Swal.fire({ 
-                icon: 'success', 
-                title: 'Order Placed! 🎉', 
-                text: `Order ID: #${data.orderId}\nCounter par payment karein.`, 
-                timer: 4000 
-            });
-            
+            // Save History Logic (Same as before)
+            const myOrder = { orderId: data.orderId, items: finalItems, total: total, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), status: 'Pending' };
+            saveLocalHistory(myOrder);
+
             cart = {}; updateCartUI(); 
             setTimeout(() => openSidebar('history'), 1000);
         } else {
             document.getElementById('paymentModal').style.display = 'none';
-            if(data.message === "Shop Closed") showClosedMessage();
-            else Swal.fire('Oops!', data.message, 'error');
+            if(data.message === "Shop Closed") showClosedMessage(); else Swal.fire('Oops!', data.message, 'error');
         }
     } catch(e) { 
-        console.error(e);
         document.getElementById('paymentModal').style.display = 'none';
         Swal.fire('Network Error', 'Internet check karo! 📶', 'error'); 
     }
