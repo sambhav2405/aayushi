@@ -235,7 +235,7 @@
             <input type="tel" id="student-phone" placeholder="Mobile Number">
            <label style="font-size:12px; font-weight:bold; color:#555; margin-top:10px; display:block;">Delivery Location:</label>
 <div style="display:flex; gap:8px; margin-bottom:15px;">
-    <input type="text" id="delivery-location" placeholder="Eg: GIVE LOCATION" style="margin-bottom:0; flex:1;">
+    <input type="text" id="delivery-location" placeholder="Eg: Hostel Room 101" style="margin-bottom:0; flex:1;">
     
     <button onclick="getGPSLocation()" id="gps-btn" style="width:50px; background:#e3f2fd; color:#0984e3; border:1px solid #0984e3; border-radius:12px; cursor:pointer; font-size:18px;">
         <i class="fa-solid fa-location-crosshairs"></i>
@@ -307,13 +307,22 @@
             } catch(e) { console.log("Menu Load Error"); }
         }
 
+        // 🔥 Updated renderMenu to show stock
         function renderMenu(items) {
             const container = document.getElementById('menu-container');
             if(items.length === 0) { container.innerHTML = "<p style='text-align:center;width:100%; color:#888;'>Loading Menu...</p>"; return; }
             
             container.innerHTML = items.map(item => {
-                const isAvailable = item.isAvailable; 
+                // Determine availability based on isAvailable flag AND stock count
+                const stock = item.stock !== undefined ? item.stock : 50; // Default to 50 if undefined
+                const isAvailable = item.isAvailable && stock > 0; 
                 const badge = item.isBestSeller ? `<div class="bestseller-badge">🔥 Best Seller</div>` : '';
+                
+                // Button text logic
+                let btnText = 'ADD +';
+                if (!item.isAvailable) btnText = 'CLOSED';
+                else if (stock <= 0) btnText = 'SOLD OUT';
+
                 return `
                 <div class="food-card ${!isAvailable ? 'sold-out' : ''}">
                     ${badge} <img src="${item.image}" class="food-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/754/754857.png'">
@@ -321,8 +330,8 @@
                         <span class="food-cat">${item.category}</span>
                         <div class="food-name">${item.name}</div>
                         <div class="food-footer">
-                            <span class="price">₹${item.price}</span>
-                            <button class="add-btn" onclick="addToCart('${item._id}')">${isAvailable ? 'ADD +' : 'SOLD'}</button>
+                            <span class="price">₹${item.price} <small style="font-size:10px; color:${stock < 5 ? 'red' : 'green'};">(${stock} left)</small></span>
+                            <button class="add-btn" onclick="addToCart('${item._id}')">${btnText}</button>
                         </div>
                     </div>
                 </div>`;
@@ -371,8 +380,19 @@
             });
         }
 
+        // 🔥 Updated addToCart to check stock
         function addToCart(id) {
             if(!isShopOpen) return showClosedMessage();
+            
+            const item = menuItems.find(i => i._id === id);
+            const stock = item.stock !== undefined ? item.stock : 50;
+            const currentQty = cart[id] ? cart[id].qty : 0;
+
+            // Stock Check
+            if (currentQty >= stock) {
+                return Swal.fire("Out of Stock", `Sorry, sirf ${stock} bache hain!`, "warning");
+            }
+
             if(!cart[id]) cart[id] = { qty: 0, pack: false };
             cart[id].qty++; updateCartUI();
             
@@ -381,8 +401,17 @@
             setTimeout(()=>{ x.className=""; }, 1500);
         }
         
+        // 🔥 Updated updateQty to check stock
         function updateQty(id, change) { 
             if(cart[id]) { 
+                const item = menuItems.find(i => i._id === id);
+                const stock = item.stock !== undefined ? item.stock : 50;
+
+                // Check stock when increasing
+                if (change > 0 && cart[id].qty >= stock) {
+                    return Swal.fire("Limit Reached", `Sirf ${stock} available hain.`, "warning");
+                }
+
                 cart[id].qty += change; 
                 if(cart[id].qty <= 0) delete cart[id]; 
                 updateCartUI(); 
@@ -475,7 +504,7 @@ function getGPSLocation() {
             const lat = position.coords.latitude;
             const long = position.coords.longitude;
             // Google Maps Link In Input Box
-            const link = `http://maps.google.com/maps?q=${lat},${long}`;
+            const link = `http://googleusercontent.com/maps.google.com/maps?q=${lat},${long}`;
             
             document.getElementById('delivery-location').value = link; // 🔥 Input me link daal diya
             
@@ -494,7 +523,7 @@ function showPosition(position) {
     const lat = position.coords.latitude;
     const long = position.coords.longitude;
     // Google Maps Link Create
-    const link = `https://www.google.com/maps?q=${lat},${long}`;
+    const link = `http://googleusercontent.com/maps.google.com/maps?q=${lat},${long}`;
     
     document.getElementById('location-link').value = link;
     
@@ -511,6 +540,7 @@ function showError(error) {
     btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Permission Denied';
     Swal.fire("Location Error", "Please allow location access.", "warning");
 }
+      // 🔥 Updated verifyAndOrder to include item ID for stock management
       async function verifyAndOrder() {
     const name = document.getElementById('student-name').value;
     const phone = document.getElementById('student-phone').value;
@@ -520,9 +550,15 @@ function showError(error) {
     if(!name) return Swal.fire('Naam?', 'Naam likhna zaruri hai! 😅', 'question');
     if(!locationVal) return Swal.fire('Location?', 'Kahan deliver karna hai? (Room No. ya GPS)', 'question');
 
+    // 🔥 Include 'id' in the items array for the server
     const finalItems = Object.keys(cart).map(id => {
         const item = menuItems.find(i => i._id == id);
-        return { name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, qty: cart[id].qty, price: item.price };
+        return { 
+            id: id, // 🔥 ID added here
+            name: cart[id].pack ? `${item.name} (📦 PACKED)` : item.name, 
+            qty: cart[id].qty, 
+            price: item.price 
+        };
     });
     
     const total = document.getElementById('final-total').innerText;
@@ -555,6 +591,8 @@ function showError(error) {
             saveLocalHistory(myOrder);
 
             cart = {}; updateCartUI(); 
+            // Refresh menu to update stock display
+            fetchMenu();
             setTimeout(() => openSidebar('history'), 1000);
         } else {
             document.getElementById('paymentModal').style.display = 'none';
