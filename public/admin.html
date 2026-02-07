@@ -209,25 +209,35 @@
                 const searchVal = o.status === 'Pending' ? searchFilters.new : searchFilters.prep;
                 if(searchVal && !o.orderId.includes(searchVal) && !o.name.toLowerCase().includes(searchVal)) return;
 
-                const html = `
-                <div class="admin-card ${o.status==='Pending'?'new':'prep'}" onclick="stopAlarm()">
-                    <div class="card-top"><span>#${o.orderId}</span> <span>${o.pickupTime}</span></div>
-                    <div style="font-weight:bold; margin-bottom:5px;">${o.name}</div>
-                    <div style="font-size:13px; color:#555; margin-bottom:10px;">
-                        ${o.items.map(i => `<div>${i.qty} x ${i.name.replace('(📦 PACKED)', '')} ${i.name.includes('PACKED')?'<span class="pack-badge">PACK</span>':''}</div>`).join('')}
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-weight:bold; font-size:16px;">₹${o.finalTotal}</span>
-                        <span style="font-size:11px; background:#e8f5e9; color:#27ae60; padding:3px 8px; border-radius:10px;">${o.paymentId || 'Cash'}</span>
-                    </div>
-                    <div class="action-row">
-                        ${o.status === 'Pending' ? 
-                        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Accepted')">Accept</button>
-                         <button class="btn-action btn-red" onclick="event.stopPropagation(); deleteOrder('${o.orderId}')">Reject</button>` : 
-                        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Ready')">Ready</button>
-                         <button class="btn-action btn-dark" onclick="markCompleted('${o.orderId}')">Done</button>`}
-                    </div>
-                </div>`;
+            const html = `
+<div class="admin-card ${o.status==='Pending'?'new':'prep'}" onclick="stopAlarm()">
+    <div class="card-top">
+        <span>#${o.orderId}</span> 
+        <span>${o.pickupTime}</span>
+    </div>
+    
+    <div style="font-weight:bold; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+        <span>${o.name}</span>
+        ${o.location ? `<a href="${o.location}" target="_blank" style="font-size:12px; background:#e3f2fd; color:#0984e3; padding:4px 8px; border-radius:8px; text-decoration:none; display:flex; align-items:center; gap:5px; border:1px solid #0984e3;"><i class="fa-solid fa-map-location-dot"></i> Map</a>` : ''}
+    </div>
+
+    <div style="font-size:13px; color:#555; margin-bottom:10px;">
+        ${o.items.map(i => `<div>${i.qty} x ${i.name.replace('(📦 PACKED)', '')} ${i.name.includes('PACKED')?'<span class="pack-badge">PACK</span>':''}</div>`).join('')}
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-weight:bold; font-size:16px;">₹${o.finalTotal}</span>
+        <span style="font-size:11px; background:#e8f5e9; color:#27ae60; padding:3px 8px; border-radius:10px;">${o.paymentId || 'Cash'}</span>
+    </div>
+    
+    <div class="action-row">
+        ${o.status === 'Pending' ? 
+        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Accepted')">Accept</button>
+         <button class="btn-action btn-red" onclick="event.stopPropagation(); deleteOrder('${o.orderId}')">Reject</button>` : 
+        `<button class="btn-action btn-green" onclick="updateStatus('${o.orderId}','Ready')">Ready</button>
+         <button class="btn-action btn-dark" onclick="markCompleted('${o.orderId}')">Done</button>`}
+    </div>
+</div>`;
                 
                 if(o.status === 'Pending') listNew.innerHTML += html; else listPrep.innerHTML += html;
             });
